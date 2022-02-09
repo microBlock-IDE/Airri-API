@@ -5,7 +5,9 @@ const { InfluxDB, Point, HttpError } = require('@influxdata/influxdb-client')
 const fieldAllow = [
     "temp",
     "humi",
+    "pressure",
     "light",
+    "uv",
     "pm010",
     "pm025",
     "pm100",
