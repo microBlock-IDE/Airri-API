@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require('body-parser');
 const { InfluxDB, Point, HttpError } = require('@influxdata/influxdb-client')
+const { Pool, Client } = require('pg');
 
 const fieldAllow = [
     "temp",
@@ -20,12 +21,33 @@ const fieldAllow = [
 // Environment from .env file
 require('dotenv').config();
 
-const INFLUX_URL = process.env.INFLUX_URL;
-const INFLUX_TOKEN = process.env.INFLUX_TOKEN;
-const INFLUX_ORG = process.env.INFLUX_ORG;
-const INFLUX_BUCKET = process.env.INFLUX_BUCKET;
-
 const APP_PORT = 841;
+
+const {
+    INFLUX_URL,
+    INFLUX_TOKEN,
+    INFLUX_ORG,
+    INFLUX_BUCKET,
+
+    POSTGRES_HOST,
+    POSTGRES_PORT,
+    POSTGRES_USERNAME,
+    POSTGRES_PASSWORD,
+    POSTGRES_DATABASE
+} = process.env;
+
+const pool = new Pool({
+    host: POSTGRES_HOST,
+    port: POSTGRES_PORT,
+    user: POSTGRES_USERNAME,
+    password: POSTGRES_PASSWORD,
+    database: POSTGRES_DATABASE,
+});
+
+let client;
+(async () => {
+    client = await pool.connect();
+})();
 
 const app = express();
 
@@ -36,12 +58,25 @@ app.use(express.urlencoded({
 // create application/json parser
 var jsonParser = bodyParser.json();
 
-app.post("/data/:mac_address", jsonParser, (req, res) => {
+app.post("/data/:mac_address", jsonParser, async (req, res) => {
     const { mac_address } = req.params;
     const dataIn = req.body;
 
-    // Check device has on System
-
+    // Check device has on System and Update device info
+    let deviceInfo;
+    try {
+        deviceInfo = await client.query(
+            'UPDATE public.devices SET last_push = NOW(), location = $1, aqi = $2 WHERE mac_address = $3;', 
+            [ dataIn.location, dataIn.aqi, mac_address ]
+        );
+    } catch(e) {
+        res.status(500).json({ err: e.toString(), min_interval: 30 });
+        return;
+    }
+    if (deviceInfo.rowCount <= 0) {
+        res.status(401).json({ error: "device not found", min_interval: 30 });
+        return;
+    }
 
     // Put data into InfluxDB
     const writeApi = new InfluxDB({ 
