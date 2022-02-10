@@ -3,21 +3,6 @@ const bodyParser = require('body-parser');
 const { InfluxDB, Point, HttpError } = require('@influxdata/influxdb-client')
 const { Pool, Client } = require('pg');
 
-const fieldAllow = [
-    "temp",
-    "humi",
-    "pressure",
-    "light",
-    "uv",
-    "pm010",
-    "pm025",
-    "pm100",
-    "wind_speed",
-    "wind_dir",
-    "rain",
-    "co2",
-];
-
 // Environment from .env file
 require('dotenv').config();
 
@@ -35,6 +20,21 @@ const {
     POSTGRES_PASSWORD,
     POSTGRES_DATABASE
 } = process.env;
+
+const fieldAllow = [
+    "temp",
+    "humi",
+    "pressure",
+    "light",
+    "uv",
+    "pm010",
+    "pm025",
+    "pm100",
+    "wind_speed",
+    "wind_dir",
+    "rain",
+    "co2",
+];
 
 const pool = new Pool({
     host: POSTGRES_HOST,
@@ -107,7 +107,7 @@ app.post("/data/:mac_address", jsonParser, async (req, res) => {
 
 pool.connect().then(c => {
     client = c;
-    
+
     app.listen(APP_PORT, () => {
         console.log(`Start server at port ${APP_PORT}.`);
     });
