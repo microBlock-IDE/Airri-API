@@ -45,9 +45,6 @@ const pool = new Pool({
 });
 
 let client;
-(async () => {
-    client = await pool.connect();
-})();
 
 const app = express();
 
@@ -95,12 +92,12 @@ app.post("/data/:mac_address", jsonParser, async (req, res) => {
         }
     }
     writeApi.writePoint(dataPoint);
-    console.log(+new Date(), dataPoint);
+    // console.log(+new Date(), dataPoint);
 
     writeApi
         .close()
         .then(() => {
-            res.status(200).json({ min_interval: 30 });
+            res.status(201).json({ min_interval: 30 });
         })
         .catch(e => {
             console.error(e)
@@ -108,6 +105,10 @@ app.post("/data/:mac_address", jsonParser, async (req, res) => {
         });
 });
 
-app.listen(APP_PORT, () => {
-    console.log(`Start server at port ${APP_PORT}.`);
+pool.connect().then(c => {
+    client = c;
+    
+    app.listen(APP_PORT, () => {
+        console.log(`Start server at port ${APP_PORT}.`);
+    });
 });
