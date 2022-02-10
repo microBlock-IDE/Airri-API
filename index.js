@@ -96,7 +96,13 @@ app.post("/data/:mac_address", jsonParser, async (req, res) => {
 
     writeApi
         .close()
-        .then(() => {
+        .then(async () => {
+            try {
+                await client.query('UPDATE public.system SET counter = counter + 1 WHERE id = 1;');
+            } catch(e) {
+                console.warn(e);
+            }
+
             res.status(201).json({ min_interval: 30 });
         })
         .catch(e => {
